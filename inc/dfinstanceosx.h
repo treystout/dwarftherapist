@@ -20,7 +20,6 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 */
-#ifdef _DEBUG
 #ifndef DFINSTANCE_OSX_H
 #define DFINSTANCE_OSX_H
 #include "dfinstance.h"
@@ -32,23 +31,20 @@ class DFInstanceOSX : public DFInstance {
     Q_OBJECT
 public:
     DFInstanceOSX(QObject *parent=0);
-    ~DFInstanceOSX();
+    virtual ~DFInstanceOSX();
 
     // factory ctor
     bool find_running_copy(bool connect_anyway = false);
-    QVector<uint> enumerate_vector(const uint &addr);
-    char read_char(const uint &addr);
-    short read_short(const uint &addr);
-    ushort read_ushort(const uint &addr);
-    uint read_uint(const uint &addr);
-    int read_int(const uint &addr);
-    uint read_raw(const uint &addr, const uint &bytes, void *buffer);
-    QString read_string(const uint &addr);
+    QVector<VIRTADDR> enumerate_vector(const uint &addr);
+    int read_raw(const VIRTADDR &addr, int bytes, QByteArray &buffer);
+    QString read_string(const VIRTADDR &addr);
 
     // Writing
-    uint write_raw(const uint &addr, const uint &bytes, void *buffer);
-    uint write_string(const uint &addr, const QString &str);
-    uint write_int(const uint &addr, const int &val);
+    int write_raw(const VIRTADDR &addr, const int &bytes, void *buffer);
+    int write_string(const VIRTADDR &addr, const QString &str);
+    int write_int(const VIRTADDR &addr, const int &val);
+
+    void map_virtual_memory();
 
     bool attach();
     bool detach();
@@ -59,4 +55,3 @@ protected:
 };
 
 #endif // DFINSTANCE_H
-#endif

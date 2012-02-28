@@ -34,8 +34,15 @@ win32 {
 else:macx { 
     message(Setting up for OSX)
     HEADERS += ./inc/dfinstanceosx.h
-    SOURCES += ./src/dfinstanceosx.cpp
+    OBJECTIVE_SOURCES += ./src/dfinstanceosx.mm
     ICON = hammer.ico
+    LIBS += -framework Cocoa
+    LIBS += -framework Carbon
+    LIBS += -framework Security
+    LIBS += -framework SecurityFoundation
+    LIBS += -framework Foundation
+    LIBS += -framework ApplicationServices
+    LIBS += -framework Accelerate
 }
 else:unix {
     message(Setting up for Linux)
@@ -206,3 +213,6 @@ FORMS += ui/scriptdialog.ui \
     ui/about.ui \
     ui/selectparentlayoutdialog.ui
 RESOURCES += images.qrc
+
+OTHER_FILES += \
+    src/dfinstanceosx.cpp

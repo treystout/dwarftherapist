@@ -32,6 +32,11 @@ THE SOFTWARE.
 #include "memorylayout.h"
 #include "cp437codec.h"
 #include "memorysegment.h"
+#include "truncatingfilelogger.h"
+#include <stdio.h>
+#include <mach/vm_map.h>
+#include <mach/mach_traps.h>
+#include <mach-o/dyld.h>
 
 DFInstanceOSX::DFInstanceOSX(QObject* parent)
 	: DFInstance(parent)	
@@ -54,44 +59,19 @@ uint DFInstanceOSX::calculate_checksum() {
     return md5;
 }
 
-uint DFInstanceOSX::read_uint(const uint &addr) {
-    uint retval = 0;
-    return retval;
-}
-
-int DFInstanceOSX::read_int(const uint &addr) {
-    int retval = 0;
-    return retval;
-}
-
 QString DFInstanceOSX::read_string(const uint &addr) {
 	QString ret_val = "FOO";
 	return ret_val;
 }
 
-uint DFInstanceOSX::write_string(const uint &addr, const QString &str) {
+int DFInstanceOSX::write_string(const uint &addr, const QString &str) {
     Q_UNUSED(addr);
     Q_UNUSED(str);
 	return 0;
 }
 
-short DFInstanceOSX::read_short(const uint &addr) {
-    short retval = 0;
-    return retval;
-}
-
-ushort DFInstanceOSX::read_ushort(const uint &addr) {
-    ushort retval = 0;
-    return retval;
-}
-
-uint DFInstanceOSX::write_int(const uint &addr, const int &val) {
+int DFInstanceOSX::write_int(const uint &addr, const int &val) {
     return 0;
-}
-
-char DFInstanceOSX::read_char(const uint &addr) {
-	char retval;
-	return retval;
 }
 
 bool DFInstanceOSX::attach() {
@@ -102,14 +82,18 @@ bool DFInstanceOSX::detach() {
 	return true;
 }
 
-uint DFInstanceOSX::read_raw(const uint &addr, const uint &bytes, void *buffer) {
+int DFInstanceOSX::read_raw(const VIRTADDR &addr, int bytes, QByteArray &buffer) {
     return 0;
 }
 
-uint DFInstanceOSX::write_raw(const uint &addr, const uint &bytes, void *buffer) {
+int DFInstanceOSX::write_raw(const VIRTADDR &addr, const int &bytes, void *buffer) {
     return 0;
 }
 
 bool DFInstanceOSX::find_running_copy(bool) {
     return false;
 }
+
+void DFInstanceOSX::map_virtual_memory() {
+}
+

@@ -58,7 +58,7 @@ THE SOFTWARE.
 #ifdef Q_WS_X11
 #include "dfinstancelinux.h"
 #endif
-#ifdef _OSX
+#ifdef Q_WS_MAC
 #include "dfinstanceosx.h"
 #endif
 

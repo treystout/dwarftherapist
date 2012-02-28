@@ -43,7 +43,7 @@ THE SOFTWARE.
 #ifdef Q_WS_X11
 #define LAYOUT_SUBDIR "linux"
 #else
-#ifdef _OSX
+#ifdef Q_WS_MAC
 #define LAYOUT_SUBDIR "osx"
 #endif
 #endif
