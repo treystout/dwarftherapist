@@ -51,17 +51,6 @@ THE SOFTWARE.
 #include "scriptdialog.h"
 #include "truncatingfilelogger.h"
 
-#include "dfinstance.h"
-#ifdef Q_WS_WIN
-#include "dfinstancewindows.h"
-#endif
-#ifdef Q_WS_X11
-#include "dfinstancelinux.h"
-#endif
-#ifdef Q_WS_MAC
-#include "dfinstanceosx.h"
-#endif
-
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
     , ui(new Ui::MainWindow)
@@ -229,18 +218,8 @@ void MainWindow::connect_to_df() {
         set_interface_enabled(false);
         m_df = 0;
     }
+    m_df = DFInstance::newInstance();
 
-#ifdef Q_WS_WIN
-    m_df = new DFInstanceWindows();
-#else
-#ifdef Q_WS_MAC
-    m_df = new DFInstanceOSX();
-#else
-#ifdef Q_WS_X11
-    m_df = new DFInstanceLinux();
-#endif
-#endif
-#endif
     // find_running_copy can fail for several reasons, and will take care of
     // logging and notifying the user.
     if (m_force_connect && m_df && m_df->find_running_copy(true)) {

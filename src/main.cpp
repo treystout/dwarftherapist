@@ -31,8 +31,22 @@ THE SOFTWARE.
 */
 
 #include "dwarftherapist.h"
+#include "dfinstance.h"
+#include "truncatingfilelogger.h"
+
+QString therapistExe;
 
 int main(int argc, char *argv[]) {
+    therapistExe = argv[0];
     DwarfTherapist d(argc, argv);
+
+    DFInstance *inst = DFInstance::newInstance();
+    if( !inst->authorize() ) {
+        LOGW << "Unable to authorize DwarfTherapist!";
+        d.closeAllWindows();
+        d.quit();
+        return 0;
+    }
+
     return d.exec();
 }

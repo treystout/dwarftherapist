@@ -39,16 +39,18 @@ THE SOFTWARE.
 
 #ifdef Q_WS_WIN
 #define LAYOUT_SUBDIR "windows"
+#include "dfinstancewindows.h"
 #else
 #ifdef Q_WS_X11
 #define LAYOUT_SUBDIR "linux"
+#include "dfinstancelinux.h"
 #else
 #ifdef Q_WS_MAC
 #define LAYOUT_SUBDIR "osx"
+#include "dfinstanceosx.h"
 #endif
 #endif
 #endif
-
 
 DFInstance::DFInstance(QObject* parent)
     : QObject(parent)
@@ -113,6 +115,20 @@ DFInstance::~DFInstance() {
         delete(l);
     }
     m_memory_layouts.clear();
+}
+
+DFInstance * DFInstance::newInstance() {
+#ifdef Q_WS_WIN
+    return new DFInstanceWindows();
+#else
+#ifdef Q_WS_MAC
+    return new DFInstanceOSX();
+#else
+#ifdef Q_WS_X11
+    return new DFInstanceLinux();
+#endif
+#endif
+#endif
 }
 
 BYTE DFInstance::read_byte(const VIRTADDR &addr) {

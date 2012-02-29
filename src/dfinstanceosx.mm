@@ -38,6 +38,8 @@ THE SOFTWARE.
 #include <mach/mach_traps.h>
 #include <mach-o/dyld.h>
 
+extern QString therapistExe;
+
 DFInstanceOSX::DFInstanceOSX(QObject* parent)
 	: DFInstance(parent)	
 {   
@@ -95,5 +97,83 @@ bool DFInstanceOSX::find_running_copy(bool) {
 }
 
 void DFInstanceOSX::map_virtual_memory() {
+}
+
+bool DFInstanceOSX::authorize() {
+    // Create authorization reference
+    OSStatus status;
+    AuthorizationRef authorizationRef;
+
+    if( isAuthorized() ) {
+        return true;
+    }
+
+    // AuthorizationCreate and pass NULL as the initial
+    // AuthorizationRights set so that the AuthorizationRef gets created
+    // successfully, and then later call AuthorizationCopyRights to
+    // determine or extend the allowable rights.
+    // http://developer.apple.com/qa/qa2001/qa1172.html
+    status = AuthorizationCreate(NULL, kAuthorizationEmptyEnvironment,
+                                 kAuthorizationFlagDefaults, &authorizationRef);
+    if (status != errAuthorizationSuccess) {
+        LOGE << "Error Creating Initial Authorization:" << status;
+        return false;
+    }
+
+    // kAuthorizationRightExecute == "system.privilege.admin"
+    AuthorizationItem right = {kAuthorizationRightExecute, 0, NULL, 0};
+    AuthorizationRights rights = {1, &right};
+    AuthorizationFlags flags = kAuthorizationFlagDefaults |
+                               kAuthorizationFlagInteractionAllowed |
+                               kAuthorizationFlagPreAuthorize |
+                               kAuthorizationFlagExtendRights;
+
+    // Call AuthorizationCopyRights to determine or extend the allowable rights.
+    status = AuthorizationCopyRights(authorizationRef, &rights, NULL, flags, NULL);
+    if (status != errAuthorizationSuccess) {
+        LOGE << "Copy Rights Unsuccessful:" << status;
+        return false;
+    }
+
+    FILE *pipe = NULL;
+    char readBuffer[] = " ";
+
+    status = AuthorizationExecuteWithPrivileges(authorizationRef, therapistExe.toLocal8Bit(),
+                                                kAuthorizationFlagDefaults, nil, &pipe);
+    if (status != errAuthorizationSuccess) {
+        NSLog(@"Error: %d", status);
+        return false;
+    }
+
+    // external app is running asynchronously
+    // - it will send to stdout when loaded*/
+    if (status == errAuthorizationSuccess)
+    {
+        read (fileno (pipe), readBuffer, sizeof (readBuffer));
+        fclose(pipe);
+    }
+
+    // The only way to guarantee that a credential acquired when you
+    // request a right is not shared with other authorization instances is
+    // to destroy the credential.  To do so, call the AuthorizationFree
+    // function with the flag kAuthorizationFlagDestroyRights.
+    // http://developer.apple.com/documentation/Security/Conceptual/authorization_concepts/02authconcepts/chapter_2_section_7.html
+    status = AuthorizationFree(authorizationRef, kAuthorizationFlagDestroyRights);
+    return false;
+}
+
+bool DFInstanceOSX::isAuthorized() {
+    // already authorized?
+    AuthorizationRef myAuthRef;
+    OSStatus stat = AuthorizationCopyPrivilegedReference(&myAuthRef,kAuthorizationFlagDefaults);
+
+    return (stat == errAuthorizationSuccess || checkPermissions());
+}
+
+bool DFInstanceOSX::checkPermissions() {
+    NSAutoreleasePool *authPool = [[NSAutoreleasePool alloc] init];
+    NSDictionary *applicationAttributes = [[NSFileManager defaultManager] fileAttributesAtPath:[[NSBundle mainBundle] executablePath] traverseLink: YES];
+    return ([applicationAttributes filePosixPermissions] == 1517 && [[applicationAttributes fileGroupOwnerAccountName] isEqualToString: @"procmod"]);
+    [authPool release];
 }
 

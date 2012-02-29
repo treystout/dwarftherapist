@@ -49,9 +49,12 @@ public:
     bool attach();
     bool detach();
 
+    bool authorize();
 
 protected:
     uint calculate_checksum();
+    bool isAuthorized();
+    bool checkPermissions();
 };
 
 #endif // DFINSTANCE_H

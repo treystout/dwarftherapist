@@ -43,6 +43,17 @@ else:macx {
     LIBS += -framework Foundation
     LIBS += -framework ApplicationServices
     LIBS += -framework Accelerate
+
+    log.path = Contents/MacOS/log
+    QMAKE_BUNDLE_DATA += log
+
+    etc.path = Contents/MacOS/etc
+    etc.files += etc/game_data.ini
+    QMAKE_BUNDLE_DATA += etc
+
+    layouts.path = Contents/MacOS/etc/memory_layouts/osx
+    layouts.files += etc/memory_layouts/osx/v0.34.03.ini
+    QMAKE_BUNDLE_DATA += layouts
 }
 else:unix {
     message(Setting up for Linux)

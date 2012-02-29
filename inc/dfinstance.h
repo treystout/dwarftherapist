@@ -107,6 +107,10 @@ public:
     virtual bool attach() = 0;
     virtual bool detach() = 0;
 
+    virtual bool authorize() { return true; }
+
+    static DFInstance * newInstance();
+
     // Windows string offsets
 #ifdef Q_WS_WIN
     static const int STRING_BUFFER_OFFSET = 4;  // Default value for older windows releases
