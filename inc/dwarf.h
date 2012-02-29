@@ -247,6 +247,8 @@ public:
         void show_details();
         //! copy this dwarf's memory address to the clipboard (debugging)
         void copy_address_to_clipboard();
+        //! show a dialog with a memory dump for this dwarf's souls...
+        void dump_souls();
 
 
 

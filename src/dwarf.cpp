@@ -81,6 +81,10 @@ Dwarf::Dwarf(DFInstance *df, const uint &addr, QObject *parent)
     connect(copy_address_to_clipboard, SIGNAL(triggered()),
             SLOT(copy_address_to_clipboard()));
     m_actions << copy_address_to_clipboard;
+
+    QAction *dump_soul = new QAction(tr("Dump Souls..."), this);
+    connect(dump_soul, SIGNAL(triggered()), SLOT(dump_souls()));
+    m_actions << dump_soul;
 }
 
 
@@ -882,6 +886,32 @@ void Dwarf::dump_memory() {
     te->setFontFamily("Courier");
     te->setFontPointSize(8);
     QByteArray data = m_df->get_data(m_address, 0xb90);
+    te->setText(m_df->pprint(data));
+    v->addWidget(te);
+    d->setLayout(v);
+    d->show();
+}
+
+void Dwarf::dump_souls() {
+    VIRTADDR soul_vector = m_address + m_mem->dwarf_offset("souls");
+    QVector<VIRTADDR> souls = m_df->enumerate_vector(soul_vector);
+    if (souls.size() < 1) {
+        LOGW << nice_name() << "has no soul!";
+        return;
+    }
+    VIRTADDR addr = souls.at(0);
+    QDialog *d = new QDialog(DT->get_main_window());
+    d->setAttribute(Qt::WA_DeleteOnClose, true);
+    d->setWindowTitle(QString("%1 Soul [addr: 0x%3]")
+        .arg(m_nice_name)
+        .arg(addr, 8, 16, QChar('0')));
+    d->resize(800, 600);
+    QVBoxLayout *v = new QVBoxLayout(d);
+    QTextEdit *te = new QTextEdit(d);
+    te->setReadOnly(true);
+    te->setFontFamily("Courier");
+    te->setFontPointSize(8);
+    QByteArray data = m_df->get_data(addr, 0xb90);
     te->setText(m_df->pprint(data));
     v->addWidget(te);
     d->setLayout(v);
