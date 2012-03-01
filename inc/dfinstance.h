@@ -107,7 +107,7 @@ public:
     virtual bool attach() = 0;
     virtual bool detach() = 0;
 
-    virtual bool authorize() { return true; }
+    static bool authorize();
 
     static DFInstance * newInstance();
 

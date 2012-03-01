@@ -404,5 +404,8 @@ void DFInstanceLinux::map_virtual_memory() {
         }
     } while (!line.isEmpty());
     f.close();
+}
 
+bool DFInstance::authorize() {
+    return true;
 }

@@ -365,4 +365,7 @@ void DFInstanceWindows::map_virtual_memory() {
     LOGD << "MEMORY SEGMENT SUMMARY: accepted" << accepted << "rejected" <<
             rejected << "total" << accepted + rejected;
 }
+
+bool DFInstance::authorize() {
+    return true;
 #endif

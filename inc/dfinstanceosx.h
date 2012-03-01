@@ -22,6 +22,9 @@ THE SOFTWARE.
 */
 #ifndef DFINSTANCE_OSX_H
 #define DFINSTANCE_OSX_H
+#include <mach/vm_region.h>
+#include <mach/vm_map.h>
+
 #include "dfinstance.h"
 #include "dwarf.h"
 
@@ -49,12 +52,13 @@ public:
     bool attach();
     bool detach();
 
-    bool authorize();
+    static bool isAuthorized();
+    static bool checkPermissions();
 
 protected:
     uint calculate_checksum();
-    bool isAuthorized();
-    bool checkPermissions();
+    vm_map_t m_task;
+    QString m_loc_of_dfexe;
 };
 
 #endif // DFINSTANCE_H

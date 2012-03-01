@@ -37,8 +37,24 @@ THE SOFTWARE.
 #include <mach/vm_map.h>
 #include <mach/mach_traps.h>
 #include <mach-o/dyld.h>
+#include <mach/mach.h>
+#include <mach/vm_region.h>
+#include <mach/vm_statistics.h>
+#include <mach/task.h>
 
-extern QString therapistExe;
+#define MACH64 (MAC_OS_X_VERSION_MAX_ALLOWED >= 1040)
+
+#if MACH64
+#include <mach/mach_vm.h>
+#else /* ! MACH64 */
+#define mach_vm_size_t vm_size_t
+#define mach_vm_address_t vm_address_t
+#define mach_vm_read vm_read
+#define mach_vm_write vm_write
+#define mach_vm_region vm_region
+#define VM_REGION_BASIC_INFO_COUNT_64 VM_REGION_BASIC_INFO_COUNT
+#define VM_REGION_BASIC_INFO_64 VM_REGION_BASIC_INFO
+#endif /* MACH64 */
 
 DFInstanceOSX::DFInstanceOSX(QObject* parent)
 	: DFInstance(parent)	
@@ -58,6 +74,20 @@ QVector<uint> DFInstanceOSX::enumerate_vector(const uint &addr) {
 uint DFInstanceOSX::calculate_checksum() {
     // ELF binaries don't seem to store a linker timestamp, so just MD5 the file.
     uint md5 = 0; // we're going to throw away a lot of this checksum we just need 4bytes worth
+    QProcess *proc = new QProcess(this);
+    QStringList args;
+    args << "-q";
+    args << m_loc_of_dfexe;
+    proc->start("md5", args);
+    if (proc->waitForReadyRead(3000)) {
+        QByteArray out = proc->readAll();
+        QString str_md5(out);
+        QStringList chunks = str_md5.split(" ");
+        str_md5 = chunks[0];
+        bool ok;
+        md5 = str_md5.mid(0, 8).toUInt(&ok,16); // use the first 8 bytes
+        TRACE << "GOT MD5:" << md5;
+    }
     return md5;
 }
 
@@ -92,21 +122,102 @@ int DFInstanceOSX::write_raw(const VIRTADDR &addr, const int &bytes, void *buffe
     return 0;
 }
 
-bool DFInstanceOSX::find_running_copy(bool) {
-    return false;
+bool DFInstanceOSX::find_running_copy(bool connect_anyway) {
+    NSAutoreleasePool *authPool = [[NSAutoreleasePool alloc] init];
+
+    NSWorkspace *workspace = [NSWorkspace sharedWorkspace];
+    NSArray *launchedApps = [workspace launchedApplications];
+
+    unsigned i, len = [launchedApps count];
+
+    // compile process array
+    for ( i = 0; i < len; i++ ) {
+        NSDictionary *application = [launchedApps objectAtIndex:i];
+        if ( [[application objectForKey:@"NSApplicationName"]
+                                            isEqualToString:@"dwarfort.exe" ]) {
+
+            m_loc_of_dfexe = QString( [[application objectForKey:
+                                     @"NSApplicationPath"] UTF8String]);
+            m_pid = [[application objectForKey:
+                                            @"NSApplicationProcessIdentifier"]
+                                            intValue];
+            LOGD << "Found running copy, pid:" << m_pid << "path:" << m_loc_of_dfexe;
+        }
+    }
+
+    kern_return_t kret = task_for_pid( current_task(), m_pid, &m_task );
+    if (m_pid == 0 || ! (kret == KERN_SUCCESS)) {
+        QMessageBox::warning(0, tr("Warning"),
+                             tr("Unable to locate a running copy of Dwarf "
+                                "Fortress, are you sure it's running?"));
+        LOGW << "can't find running copy";
+        m_is_ok = false;
+        return m_is_ok;
+
+    }
+
+    m_is_ok = true;
+    m_layout = get_memory_layout(hexify(calculate_checksum()).toLower(), !connect_anyway);
+
+    map_virtual_memory();
+
+    [authPool release];
+
+    return true;
 }
 
 void DFInstanceOSX::map_virtual_memory() {
+    if (m_regions.isEmpty()) {
+        if (!m_is_ok)
+            return;
+
+        kern_return_t result;
+
+        mach_vm_address_t address = 0x0;
+        mach_vm_size_t size = 0;
+        vm_region_basic_info_data_64_t info;
+        mach_msg_type_number_t infoCnt = VM_REGION_BASIC_INFO_COUNT_64;
+        mach_port_t object_name = 0;
+
+        m_lowest_address = 0;
+        do
+        {
+            // get the next region
+            result = mach_vm_region( m_task, &address, &size, VM_REGION_BASIC_INFO_64, (vm_region_info_t)(&info), &infoCnt, &object_name );
+
+            if ( result == KERN_SUCCESS ) {
+                if ((info.protection & VM_PROT_READ) == VM_PROT_READ  && (info.protection & VM_PROT_WRITE) == VM_PROT_WRITE) {
+                    MemorySegment *segment = new MemorySegment("", address, address+size);
+                    TRACE << "Adding segment: " << address << ":" << address+size << " prot: " << info.protection;
+                    m_regions << segment;
+
+                    if(m_lowest_address == 0)
+                        m_lowest_address = address;
+                    if(address < m_lowest_address)
+                        m_lowest_address = address;
+                    if((address + size) > m_highest_address)
+                        m_highest_address = (address + size);
+                }
+            }
+
+            address = address + size;
+        } while (result != KERN_INVALID_ADDRESS);
+    }
 }
 
-bool DFInstanceOSX::authorize() {
+bool DFInstance::authorize() {
     // Create authorization reference
     OSStatus status;
     AuthorizationRef authorizationRef;
 
-    if( isAuthorized() ) {
-        return true;
+    if( DFInstanceOSX::isAuthorized() ) {
+         return true;
     }
+
+    char therapistExe[1024];
+    uint32_t size = sizeof(therapistExe);
+    _NSGetExecutablePath(therapistExe, &size);
+    printf("Therapist path: %s\n", therapistExe);
 
     // AuthorizationCreate and pass NULL as the initial
     // AuthorizationRights set so that the AuthorizationRef gets created
@@ -116,7 +227,7 @@ bool DFInstanceOSX::authorize() {
     status = AuthorizationCreate(NULL, kAuthorizationEmptyEnvironment,
                                  kAuthorizationFlagDefaults, &authorizationRef);
     if (status != errAuthorizationSuccess) {
-        LOGE << "Error Creating Initial Authorization:" << status;
+        NSLog(@"Error: %d", status);
         return false;
     }
 
@@ -131,14 +242,14 @@ bool DFInstanceOSX::authorize() {
     // Call AuthorizationCopyRights to determine or extend the allowable rights.
     status = AuthorizationCopyRights(authorizationRef, &rights, NULL, flags, NULL);
     if (status != errAuthorizationSuccess) {
-        LOGE << "Copy Rights Unsuccessful:" << status;
+        NSLog(@"Error: %d", status);
         return false;
     }
 
     FILE *pipe = NULL;
-    char readBuffer[] = " ";
+    char readBuffer[32];
 
-    status = AuthorizationExecuteWithPrivileges(authorizationRef, therapistExe.toLocal8Bit(),
+    status = AuthorizationExecuteWithPrivileges(authorizationRef, therapistExe,
                                                 kAuthorizationFlagDefaults, nil, &pipe);
     if (status != errAuthorizationSuccess) {
         NSLog(@"Error: %d", status);
@@ -167,7 +278,10 @@ bool DFInstanceOSX::isAuthorized() {
     AuthorizationRef myAuthRef;
     OSStatus stat = AuthorizationCopyPrivilegedReference(&myAuthRef,kAuthorizationFlagDefaults);
 
-    return (stat == errAuthorizationSuccess || checkPermissions());
+    bool ret = (stat == errAuthorizationSuccess || checkPermissions());
+    if(!ret)
+        NSLog(@"Not authorized");
+    return ret;
 }
 
 bool DFInstanceOSX::checkPermissions() {
