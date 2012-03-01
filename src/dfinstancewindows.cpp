@@ -368,4 +368,5 @@ void DFInstanceWindows::map_virtual_memory() {
 
 bool DFInstance::authorize() {
     return true;
+}
 #endif
