@@ -48,6 +48,7 @@ void Scanner::cancel_scan() {
 }
 
 void Scanner::set_ui_enabled(bool enabled) {
+    LOGD << "set_ui_enabled" << enabled;
     m_stop_scanning = enabled;
     ui->gb_scan_targets->setEnabled(enabled);
     ui->gb_search->setEnabled(enabled);
@@ -57,6 +58,7 @@ void Scanner::set_ui_enabled(bool enabled) {
     ui->lbl_scan_progress->setText(tr("Not Scanning"));
     ui->pb_main->reset();
     ui->pb_sub->reset();
+    LOGD << "set_ui_enabled, done";
 }
 
 void Scanner::report_address(const QString &msg, const quint32 &addr) {

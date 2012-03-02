@@ -62,13 +62,74 @@ DFInstanceOSX::DFInstanceOSX(QObject* parent)
 }
 
 DFInstanceOSX::~DFInstanceOSX() {
+    if(m_attach_count > 0) {
+        detach();
+    }
+    foreach(MemorySegment *seg, m_regions) {
+        delete(seg);
+    }
+    m_regions.clear();
 }
 
 QVector<uint> DFInstanceOSX::enumerate_vector(const uint &addr) {
-    attach();
     QVector<uint> addrs;
+    if (!addr)
+        return addrs;
+
+    if( !attach() ) {
+        return addrs;
+    }
+
+    VIRTADDR start = read_addr(addr);
+    VIRTADDR end = read_addr(addr + 4);
+    int bytes = end - start;
+    int entries = bytes / 4;
+    TRACE << "enumerating vector at" << hex << addr << "START" << start << "END" << end << "UNVERIFIED ENTRIES" << dec << entries;
+    VIRTADDR tmp_addr = 0;
+
+    if (entries > 5000) {
+        LOGW << "vector at" << hexify(addr) << "has over 5000 entries! (" << entries << ")";
+    }
+
+    QByteArray data(bytes, 0);
+    int bytes_read = read_raw(start, bytes, data);
+    if (bytes_read != bytes && m_layout->is_complete()) {
+        TRACE << "Tried to read" << bytes << "bytes but only got" << bytes_read;
+        return addrs;
+    }
+    for(int i = 0; i < bytes; i += 4) {
+        tmp_addr = decode_dword(data.mid(i, 4));
+        if (m_layout->is_complete()) {
+            if (is_valid_address(tmp_addr))
+                addrs << tmp_addr;
+        } else {
+            addrs << tmp_addr;
+        }
+    }
     detach();
     return addrs;
+}
+
+QString DFInstanceOSX::read_string(const uint &addr) {
+    VIRTADDR buffer_addr = read_addr(addr);
+    int upper_size = 256;
+    QByteArray buf(upper_size, 0);
+    read_raw(buffer_addr, upper_size, buf);
+
+    QString ret_val(buf);
+    CP437Codec *codec = new CP437Codec;
+    ret_val = codec->toUnicode(ret_val.toAscii());
+    return ret_val;
+}
+
+int DFInstanceOSX::write_string(const uint &addr, const QString &str) {
+    Q_UNUSED(addr);
+    Q_UNUSED(str);
+    return 0;
+}
+
+int DFInstanceOSX::write_int(const uint &addr, const int &val) {
+    return write_raw(addr, sizeof(int), (void*)&val);
 }
 
 uint DFInstanceOSX::calculate_checksum() {
@@ -91,35 +152,66 @@ uint DFInstanceOSX::calculate_checksum() {
     return md5;
 }
 
-QString DFInstanceOSX::read_string(const uint &addr) {
-	QString ret_val = "FOO";
-	return ret_val;
-}
-
-int DFInstanceOSX::write_string(const uint &addr, const QString &str) {
-    Q_UNUSED(addr);
-    Q_UNUSED(str);
-	return 0;
-}
-
-int DFInstanceOSX::write_int(const uint &addr, const int &val) {
-    return 0;
-}
-
 bool DFInstanceOSX::attach() {
+    kern_return_t result;
+    if(m_attach_count > 0) {
+        m_attach_count++;
+        return true;
+    }
+
+    result = task_suspend(m_task);
+    if ( result != KERN_SUCCESS ) {
+        return false;
+    }
+    m_attach_count++;
     return true;
 }
 
 bool DFInstanceOSX::detach() {
-	return true;
+    kern_return_t result;
+
+    if( m_attach_count == 0 ) {
+        return true;
+    }
+
+    if( m_attach_count > 1 ) {
+        m_attach_count--;
+        return true;
+    }
+
+    result = task_resume(m_task);
+    if ( result != KERN_SUCCESS ) {
+        return false;
+    }
+    m_attach_count--;
+    return true;
 }
 
 int DFInstanceOSX::read_raw(const VIRTADDR &addr, int bytes, QByteArray &buffer) {
-    return 0;
+    kern_return_t result;
+
+    vm_size_t readsize = 0;
+
+    result = vm_read_overwrite(m_task, addr, bytes,
+                               (vm_address_t)buffer.data(),
+                               &readsize );
+
+    if ( result != KERN_SUCCESS ) {
+        return 0;
+    }
+
+    return readsize;
 }
 
 int DFInstanceOSX::write_raw(const VIRTADDR &addr, const int &bytes, void *buffer) {
-    return 0;
+    kern_return_t result;
+
+    result = vm_write( m_task,  addr,  (vm_offset_t)buffer,  bytes );
+    if ( result != KERN_SUCCESS ) {
+        return 0;
+    }
+
+    return bytes;
 }
 
 bool DFInstanceOSX::find_running_copy(bool connect_anyway) {
@@ -157,9 +249,8 @@ bool DFInstanceOSX::find_running_copy(bool connect_anyway) {
     }
 
     m_is_ok = true;
-    m_layout = get_memory_layout(hexify(calculate_checksum()).toLower(), !connect_anyway);
-
     map_virtual_memory();
+    m_layout = get_memory_layout(hexify(calculate_checksum()).toLower(), !connect_anyway);
 
     [authPool release];
 
@@ -202,6 +293,7 @@ void DFInstanceOSX::map_virtual_memory() {
 
             address = address + size;
         } while (result != KERN_INVALID_ADDRESS);
+        LOGD << "Mapped " << m_regions.size() << " memory regions.";
     }
 }
 
