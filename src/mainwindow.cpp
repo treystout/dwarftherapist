@@ -151,6 +151,8 @@ MainWindow::MainWindow(QWidget *parent)
 
     if (m_settings->value("options/check_for_updates_on_startup", true).toBool())
         check_latest_version();
+
+    raise();
 }
 
 MainWindow::~MainWindow() {

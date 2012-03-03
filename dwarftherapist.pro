@@ -35,7 +35,7 @@ else:macx {
     message(Setting up for OSX)
     HEADERS += ./inc/dfinstanceosx.h
     OBJECTIVE_SOURCES += ./src/dfinstanceosx.mm
-    ICON = hammer.ico
+    ICON = hammer.icns
     LIBS += -framework Cocoa
     LIBS += -framework Carbon
     LIBS += -framework Security
