@@ -36,6 +36,7 @@ THE SOFTWARE.
 #include "positionvectorsearchjob.h"
 #include "narrowingvectorsearchjob.h"
 #include "squadvectorsearchjob.h"
+#include "currentyearsearchjob.h"
 
 class ScannerThread : public QThread {
     Q_OBJECT
@@ -117,6 +118,11 @@ public:
                 {
                     m_job = new SquadVectorSearchJob;
                     break;
+                }
+                break;
+        case FIND_CURRENT_YEAR:
+                {
+                    m_job = new CurrentYearSearchJob;
                 }
                 break;
             default:

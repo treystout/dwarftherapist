@@ -130,6 +130,13 @@
             </property>
            </widget>
           </item>
+          <item row="2" column="1">
+           <widget class="QPushButton" name="btn_find_current_year">
+            <property name="text">
+             <string>Locate Current Year</string>
+            </property>
+           </widget>
+          </item>
          </layout>
         </widget>
        </item>
@@ -1027,6 +1034,22 @@
     </hint>
    </hints>
   </connection>
+  <connection>
+   <sender>btn_find_current_year</sender>
+   <signal>clicked()</signal>
+   <receiver>ScannerDialog</receiver>
+   <slot>find_current_year()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>1054</x>
+     <y>101</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>788</x>
+     <y>728</y>
+    </hint>
+   </hints>
+  </connection>
  </connections>
  <slots>
   <slot>find_creature_vector()</slot>
@@ -1047,6 +1070,7 @@
   <slot>print_narrowing()</slot>
   <slot>find_squad_vector()</slot>
   <slot>change_operator()</slot>
+  <slot>find_current_year()</slot>
  </slots>
  <buttongroups>
   <buttongroup name="buttonGroup"/>

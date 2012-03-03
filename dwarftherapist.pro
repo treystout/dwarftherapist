@@ -163,7 +163,8 @@ HEADERS += inc/win_structs.h \
     inc/raws/rawnode.h \
     inc/raws/rawobject.h \
     inc/raws/rawreader.h \
-    inc/raws/rawobjectlist.h
+    inc/raws/rawobjectlist.h \
+    inc/currentyearsearchjob.h
 SOURCES += src/viewmanager.cpp \
     src/uberdelegate.cpp \
     src/truncatingfilelogger.cpp \
