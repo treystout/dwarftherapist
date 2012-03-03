@@ -59,7 +59,6 @@ public slots:
         emit scan_message(tr("Looking for Current Year"));
         QByteArray search;
         int tmp = 0;
-        search.append((char*)&tmp, sizeof(int));
         search.append((char*)&expected_val, sizeof(int));
         search.append((char*)&tmp, sizeof(int));
 
@@ -76,7 +75,7 @@ public slots:
         LOGD << "Searching for current year, up to " << hex << end_addr;
         foreach(uint ptr, m_df->scan_mem(search, m_df->get_memory_correction(), end_addr)) {
             LOGD << "\tPTR" << hex << ptr;
-            emit found_address("current year", ptr+4);
+            emit found_address("current year", ptr);
         }
         emit quit();
     }
