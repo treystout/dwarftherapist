@@ -81,7 +81,6 @@ void DwarfTherapist::setup_logging() {
 
     //TODO REMOVE ME
     // debug logging on by default for the early builds...
-    trace_logging = true;
     debug_logging = true;
 
     LOG_LEVEL min_level = LL_INFO;

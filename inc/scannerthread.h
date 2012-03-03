@@ -149,7 +149,6 @@ public:
         QTimer::singleShot(0, m_job, SLOT(go()));
         exec();
         m_job->deleteLater();
-        deleteLater();
     }
 
 private:

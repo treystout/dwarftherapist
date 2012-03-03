@@ -70,7 +70,6 @@ public:
                                    str);
             }
             emit quit();
-            LOGD << "Quitting scanner thread" << QThread::currentThreadId();
         }
 
 private:

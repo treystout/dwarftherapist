@@ -218,7 +218,6 @@ void MainWindow::connect_to_df() {
         set_interface_enabled(false);
         m_df = 0;
     }
-    LOGD << "creating new DFInstance";
     m_df = DFInstance::newInstance();
 
     // find_running_copy can fail for several reasons, and will take care of
