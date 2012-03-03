@@ -42,7 +42,9 @@ ViewManager::ViewManager(DwarfModel *dm, DwarfModelProxy *proxy,
     m_proxy->setSourceModel(m_model);
     setTabsClosable(true);
     setMovable(true);
-
+#ifdef Q_WS_MAC
+    setStyleSheet("QTabWidget::tab-bar { alignment: left; left: -4px; }");
+#endif
     reload_views();
 
     m_add_tab_button->setIcon(QIcon(":img/tab_add.png"));
