@@ -302,14 +302,19 @@ bool DFInstance::authorize() {
     OSStatus status;
     AuthorizationRef authorizationRef;
 
-    if( DFInstanceOSX::isAuthorized() ) {
-         return true;
-    }
-
     char therapistExe[1024];
     uint32_t size = sizeof(therapistExe);
     _NSGetExecutablePath(therapistExe, &size);
     printf("Therapist path: %s\n", therapistExe);
+
+    if( DFInstanceOSX::isAuthorized() ) {
+        // Ensure we're in the correct path
+        QDir dir(therapistExe);
+        dir.makeAbsolute();
+        dir.cdUp();
+        chdir(dir.absolutePath().toLocal8Bit());
+        return true;
+    }
 
     // AuthorizationCreate and pass NULL as the initial
     // AuthorizationRights set so that the AuthorizationRef gets created
@@ -382,4 +387,5 @@ bool DFInstanceOSX::checkPermissions() {
     return ([applicationAttributes filePosixPermissions] == 1517 && [[applicationAttributes fileGroupOwnerAccountName] isEqualToString: @"procmod"]);
     [authPool release];
 }
+
 
