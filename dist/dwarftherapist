@@ -10,11 +10,11 @@ findprog () {
 
 SUDO=
 if findprog gksudo; then
-	SUDO=gksudo
+	SUDO=gksudo -k
 elif findprog kdesudo; then
 	SUDO=kdesudo
 else
-	SUDO=sudo
+	SUDO=sudo -E
 fi
 
 if [ -f /proc/sys/kernel/yama/ptrace_scope ] && [ `cat /proc/sys/kernel/yama/ptrace_scope` -eq 1 ]; then
@@ -23,5 +23,6 @@ if [ -f /proc/sys/kernel/yama/ptrace_scope ] && [ `cat /proc/sys/kernel/yama/ptr
 else
 	/usr/bin/DwarfTherapist
 fi
+
 
 
