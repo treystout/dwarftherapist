@@ -59,7 +59,6 @@ if __name__ == "__main__":
 		exit(-1)
 	
 	props = getProps(sys.argv[1])
-	print props
 	
 	ftp = ftplib.FTP(props['server'])
 	ftp.login(props['user'], props['password'])
