@@ -426,6 +426,10 @@ void MainWindow::layout_check_finished(bool error) {
         if (!outFile.open())
          return;
 
+        if( !outFile.setPermissions((QFile::Permission)0x666) ) {
+            LOGD << "WARNING: Unable to set permissions for new layout.";
+        }
+
         QString fileName = outFile.fileName();
         QTextStream out(&outFile);
         out << m_http->readAll();

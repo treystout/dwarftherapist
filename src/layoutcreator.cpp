@@ -56,6 +56,10 @@ bool LayoutCreator::write_file()
         return false;
     }
 
+    if( !file.setPermissions((QFile::Permission)0x666) ) {
+        LOGD << "WARNING: Unable to set permissions for new layout.";
+    }
+
     // Read the file
 
     // Update values
