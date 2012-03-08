@@ -313,6 +313,7 @@ bool DFInstance::authorize() {
         dir.makeAbsolute();
         dir.cdUp();
         chdir(dir.absolutePath().toLocal8Bit());
+        fflush(stdout);
         return true;
     }
 
