@@ -53,6 +53,9 @@ else:macx {
 
     layouts.path = Contents/MacOS/etc/memory_layouts/osx
     layouts.files += etc/memory_layouts/osx/v0.34.04.ini
+    layouts.files += etc/memory_layouts/osx/v0.34.05.ini
+    layouts.files += etc/memory_layouts/osx/v0.34.06.ini
+    layouts.files += etc/memory_layouts/osx/v0.34.07.ini
     QMAKE_BUNDLE_DATA += layouts
 }
 else:unix {
